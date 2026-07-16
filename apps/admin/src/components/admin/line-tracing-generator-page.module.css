@@ -1,0 +1,49 @@
+.page {
+  max-width: 1400px;
+}
+
+.formCard {
+  margin-bottom: 20px;
+}
+
+.summary {
+  color: #5f6b76;
+  margin-bottom: 0 !important;
+}
+
+.previewGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 18px;
+}
+
+.previewCard {
+  overflow: hidden;
+}
+
+.preview {
+  width: 100%;
+  aspect-ratio: 8.5 / 11;
+  border: 1px solid #e5e9ed;
+  background: #fff;
+  overflow: hidden;
+}
+
+.preview svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.previewLabel {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+@media (max-width: 700px) {
+  .previewGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

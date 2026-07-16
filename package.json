@@ -1,0 +1,26 @@
+{
+  "name": "printlykiddo-monorepo",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:admin": "npm run dev --workspace printly-admin",
+    "dev:site": "PRINTLY_STATIC_RENDER=1 npm run dev --workspace printlykiddo",
+    "dev:worker": "npm run dev --workspace @printlykiddo/site-worker",
+    "pages:scan": "node packages/publisher/src/cli.mjs scan",
+    "pages:status": "node packages/publisher/src/cli.mjs status",
+    "pages:build": "node packages/publisher/src/cli.mjs build",
+    "pages:publish-local": "node packages/publisher/src/cli.mjs publish-local",
+    "pages:rebuild": "node packages/publisher/src/cli.mjs rebuild",
+    "check:publisher": "node --check packages/publisher/src/cli.mjs",
+    "check:worker": "npm run typecheck --workspace @printlykiddo/site-worker",
+    "check": "npm run check:publisher && npm run check:worker"
+  },
+  "engines": {
+    "node": ">=22.5"
+  }
+}

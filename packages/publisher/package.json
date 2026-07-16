@@ -1,0 +1,11 @@
+{
+  "name": "@printlykiddo/publisher",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@printlykiddo/page-data": "0.1.0",
+    "@printlykiddo/page-templates": "0.1.0",
+    "@printlykiddo/shared": "0.1.0"
+  }
+}

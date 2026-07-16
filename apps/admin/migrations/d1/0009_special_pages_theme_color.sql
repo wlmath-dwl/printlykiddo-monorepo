@@ -1,0 +1,1 @@
+ALTER TABLE special_pages ADD COLUMN theme_color TEXT NOT NULL DEFAULT '#7ADDE8';

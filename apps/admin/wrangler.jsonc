@@ -1,0 +1,32 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "main": ".open-next/worker.js",
+  "name": "printly-admin",
+  "compatibility_date": "2026-03-11",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS",
+  },
+  "r2_buckets": [
+    {
+      "binding": "IMAGE_BUCKET",
+      "bucket_name": "kid-print",
+      "remote": true,
+    },
+    {
+      "binding": "NEXT_INC_CACHE_R2_BUCKET",
+      "bucket_name": "printly-admin-opennext-cache",
+      "remote": true,
+    },
+  ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "kid-print",
+      "database_id": "91331902-ad8e-4186-a6e1-07bc9bc60e25",
+      "remote": true,
+      "migrations_dir": "migrations/d1",
+    },
+  ],
+}

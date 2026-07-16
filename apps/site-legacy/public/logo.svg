@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 96" role="img" aria-labelledby="title desc">
+  <title id="title">PrintlyKiddo</title>
+  <desc id="desc">PrintlyKiddo logo with a printable page mark and wordmark.</desc>
+  <g transform="translate(8 8)">
+    <rect width="80" height="80" rx="20" fill="#F5B51B"/>
+    <path d="M21 12h31l12 12v44H21z" fill="#FFFDF7" stroke="#3D3522" stroke-width="4.2" stroke-linejoin="round"/>
+    <path d="M52 12v13h12" fill="#FFE7A3" stroke="#3D3522" stroke-width="4.2" stroke-linejoin="round"/>
+    <path d="M31 34h13c6 0 10 3.6 10 8.5S50 51 44 51h-7v10h-6z" fill="none" stroke="#3D3522" stroke-width="4.8" stroke-linejoin="round"/>
+    <path d="M55 37v24M55 49l11-12M55 49l12 12" fill="none" stroke="#3D3522" stroke-width="4.8" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M30 25h15" stroke="#2C7A7B" stroke-width="4" stroke-linecap="round"/>
+    <path d="M30 67h24" stroke="#E35F4F" stroke-width="4" stroke-linecap="round"/>
+  </g>
+  <text x="108" y="59" fill="#3D3522" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="40" font-weight="800" letter-spacing="0">
+    Printly<tspan fill="#C58B00">Kiddo</tspan>
+  </text>
+</svg>

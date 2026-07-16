@@ -1,0 +1,21 @@
+node_modules/
+.next/
+.open-next/
+.wrangler/
+dist/
+coverage/
+*.tsbuildinfo
+
+# Local publishing output and registry. Nothing here is uploaded automatically.
+.local/
+output/
+
+# Local content database, generated media and backups are intentionally outside Git.
+apps/admin/data/
+apps/admin/.env.local
+apps/admin/.dev.vars
+apps/site-legacy/.env.local
+apps/site-legacy/.dev.vars
+
+.DS_Store
+*.log

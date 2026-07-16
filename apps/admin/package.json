@@ -1,0 +1,43 @@
+{
+  "name": "printly-admin",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "/Users/dongwanlong/.npm-global/bin/node node_modules/next/dist/bin/next dev --port 4540",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "seed:category-name-zh": "node scripts/apply-category-name-zh.mjs",
+    "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "deploy": "node -e \"console.error('Disabled in local migration workspace'); process.exit(1)\"",
+    "cf-typegen": "wrangler types --env-interface CloudflareEnv --include-runtime=false cloudflare-env.d.ts"
+  },
+  "dependencies": {
+    "@ant-design/icons": "^6.1.0",
+    "@ant-design/nextjs-registry": "^1.3.0",
+    "@opennextjs/cloudflare": "^1.17.1",
+    "@types/better-sqlite3": "^7.6.13",
+    "antd": "^6.3.2",
+    "better-sqlite3": "^12.6.2",
+    "d3-contour": "^4.0.2",
+    "ffmpeg-static": "^5.3.0",
+    "jimp": "^1.6.0",
+    "next": "^16.1.6",
+    "pdf-lib": "^1.17.1",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "sharp": "^0.34.5",
+    "slugify": "^1.6.6",
+    "vectortracer": "^0.1.2"
+  },
+  "devDependencies": {
+    "@types/d3-contour": "^3.0.6",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "^16.1.6",
+    "typescript": "^5",
+    "wrangler": "^4.72.0"
+  }
+}

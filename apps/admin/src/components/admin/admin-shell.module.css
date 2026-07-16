@@ -1,0 +1,33 @@
+.logo {
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 20px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.logoShort {
+  font-size: 14px;
+  letter-spacing: 0.04em;
+}
+
+.content {
+  min-height: calc(100vh - 56px);
+  padding: 24px;
+  background: #f5f7fa;
+}
+
+.topbar {
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 0 24px;
+  background: #fff;
+  border-bottom: 1px solid #f0f0f0;
+}

@@ -1,0 +1,28 @@
+name = "printlykiddo"
+main = ".open-next/worker.js"
+compatibility_date = "2026-03-18"
+compatibility_flags = ["nodejs_compat", "global_fetch_strictly_public"]
+
+[assets]
+directory = ".open-next/assets"
+binding = "ASSETS"
+
+[[services]]
+binding = "WORKER_SELF_REFERENCE"
+service = "printlykiddo"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "kid-print"
+database_id = "91331902-ad8e-4186-a6e1-07bc9bc60e25"
+remote = true
+
+# OpenNext ISR / unstable_cache 持久化到 R2。
+# 写入路径前缀是 `incremental-cache/`，与图片代理 worker 用的 `imgs/` 不冲突。
+[[r2_buckets]]
+binding = "NEXT_INC_CACHE_R2_BUCKET"
+bucket_name = "kid-print"
+
+[observability.logs]
+enabled = true
+head_sampling_rate = 1

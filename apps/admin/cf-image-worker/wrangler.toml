@@ -1,0 +1,20 @@
+# 基础配置
+name = "printlykiddo-image-proxy"
+main = "index.js"
+compatibility_date = "2024-03-11"
+compatibility_flags = ["nodejs_compat"]
+
+# 绑定私有 R2 存储桶（必填：替换为你的 R2 桶名）
+[[r2_buckets]]
+binding = "IMG_R2"
+bucket_name = "kid-print"
+
+# 绑定 KV 命名空间（必填：替换为你的 KV ID）
+[[kv_namespaces]]
+binding = "RATE_LIMIT_KV"
+id = "d608e20ecfab4b40aa3ad8a34fecc21d"
+
+# 可选：绑定到主域名的子路径（printlykiddo.com/images/*）
+# [routes]
+# pattern = "printlykiddo.com/images/*"
+# zone_name = "printlykiddo.com"

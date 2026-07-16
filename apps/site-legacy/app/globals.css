@@ -1,0 +1,155 @@
+@config "../tailwind.config.js";
+@import "tailwindcss";
+
+:root {
+  color-scheme: light;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: #f7f5f1;
+  color: #3d3522;
+}
+
+/* 打印：页边距（约 12mm，常见 A4/Letter 留白；可改为 15mm 更松） */
+@page {
+  margin: 12mm;
+}
+
+@media print {
+  body {
+    background: #fff !important;
+  }
+
+  header,
+  footer {
+    display: none !important;
+  }
+}
+
+/* 不要写 a { color: inherit }，否则会盖掉 Tailwind 的 text-white（如筛选选中 Link） */
+a {
+  text-decoration: none;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.collection-hero {
+  background-color: var(--collection-theme, #7adde8);
+}
+
+.collection-home-overlay {
+  background: linear-gradient(
+    90deg,
+    rgb(var(--collection-theme-rgb, 122 221 232) / 0.98) 0%,
+    rgb(var(--collection-theme-rgb, 122 221 232) / 0.96) 58%,
+    rgb(var(--collection-theme-rgb, 122 221 232) / 0.84) 72%,
+    rgb(var(--collection-theme-rgb, 122 221 232) / 0.58) 84%,
+    rgb(var(--collection-theme-rgb, 122 221 232) / 0.28) 93%,
+    rgb(var(--collection-theme-rgb, 122 221 232) / 0) 100%
+  );
+}
+
+.collection-theme-button {
+  background-color: var(--collection-button, #5da8b0);
+  color: var(--collection-button-ink, #342e20);
+  box-shadow: 0 10px 22px
+    rgb(var(--collection-button-rgb, 93 168 176) / 0.28);
+}
+
+.collection-theme-button:hover {
+  background-color: var(--collection-button-hover, #5aa3ac);
+  box-shadow: 0 11px 24px
+    rgb(var(--collection-button-rgb, 93 168 176) / 0.34);
+}
+
+.collection-theme-button:active {
+  background-color: var(--collection-button-active, #59a1a9);
+}
+
+.collection-theme-button:focus-visible {
+  outline: 2px solid var(--collection-button-active, #59a1a9);
+  outline-offset: 3px;
+}
+
+.collection-detail-overlay {
+  background: linear-gradient(
+    90deg,
+    rgb(var(--collection-theme-rgb, 122 221 232) / 0.9) 0%,
+    rgb(var(--collection-theme-rgb, 122 221 232) / 0.58) 46%,
+    rgb(var(--collection-theme-rgb, 122 221 232) / 0.18) 72%,
+    rgb(var(--collection-theme-rgb, 122 221 232) / 0) 100%
+  );
+}
+
+@media (max-width: 479px) {
+  .collection-detail-copy {
+    background: linear-gradient(
+      180deg,
+      rgb(var(--collection-theme-rgb, 122 221 232) / 0.9) 0%,
+      rgb(247 251 255 / 0.72) 100%
+    );
+  }
+}
+
+@media (min-width: 640px) {
+  .collection-home-overlay {
+    background: linear-gradient(
+      90deg,
+      rgb(var(--collection-theme-rgb, 122 221 232) / 0.98) 0%,
+      rgb(var(--collection-theme-rgb, 122 221 232) / 0.95) 58%,
+      rgb(var(--collection-theme-rgb, 122 221 232) / 0.8) 72%,
+      rgb(var(--collection-theme-rgb, 122 221 232) / 0.52) 86%,
+      rgb(var(--collection-theme-rgb, 122 221 232) / 0.22) 94%,
+      rgb(var(--collection-theme-rgb, 122 221 232) / 0) 100%
+    );
+  }
+}
+
+@media (min-width: 768px) {
+  .collection-detail-overlay {
+    background: linear-gradient(
+      90deg,
+      rgb(var(--collection-theme-rgb, 122 221 232) / 0.88) 0%,
+      rgb(var(--collection-theme-rgb, 122 221 232) / 0.48) 42%,
+      rgb(var(--collection-theme-rgb, 122 221 232) / 0.12) 68%,
+      rgb(var(--collection-theme-rgb, 122 221 232) / 0) 100%
+    );
+  }
+}
+
+@media (min-width: 1024px) {
+  .collection-home-overlay {
+    background: linear-gradient(
+      90deg,
+      rgb(var(--collection-theme-rgb, 122 221 232) / 0.94) 0%,
+      rgb(var(--collection-theme-rgb, 122 221 232) / 0.88) 56%,
+      rgb(var(--collection-theme-rgb, 122 221 232) / 0.68) 70%,
+      rgb(var(--collection-theme-rgb, 122 221 232) / 0.38) 84%,
+      rgb(var(--collection-theme-rgb, 122 221 232) / 0.14) 94%,
+      rgb(var(--collection-theme-rgb, 122 221 232) / 0) 100%
+    );
+  }
+}
+
+/* 分类页子筛选：切换主筛时重新挂载，播放入场 */
+/* 子筛选区切换主 Tab 时轻微淡入，避免厚重动效 */
+@keyframes category-browse-sub-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.category-browse-sub-enter {
+  animation: category-browse-sub-in 0.22s ease-out;
+}

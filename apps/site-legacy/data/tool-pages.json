@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "tools": [
+    {
+      "slug": "word-search-generator",
+      "title": "Word Search Generator",
+      "page_path": "/tools/word-search-generator",
+      "is_active": 1,
+      "sort_order": 0,
+      "updated_at": "2026-07-16T04:17:32.509Z"
+    },
+    {
+      "slug": "maze-generator",
+      "title": "Maze Generator",
+      "page_path": "/tools/maze-generator",
+      "is_active": 1,
+      "sort_order": 1,
+      "updated_at": "2026-07-15T03:13:22.165Z"
+    },
+    {
+      "slug": "sudoku-generator",
+      "title": "Sudoku Generator",
+      "page_path": "/tools/sudoku-generator",
+      "is_active": 1,
+      "sort_order": 2,
+      "updated_at": "2026-07-15T03:13:22.165Z"
+    }
+  ]
+}
