@@ -207,9 +207,12 @@ export async function validateOrigin(releaseId, origin, { expectNoindex = false,
     .slice(0, maxImages > 0 ? maxImages : imageUrls.size);
   await mapConcurrent([...assets, ...sampledImages], concurrency, async (resource) => {
     try {
+      const resourceUrl = new URL(resource);
+      const isExternalImage = resourceUrl.hostname === "img.printlykiddo.com";
       const response = await fetch(resource, {
         method: "HEAD",
         redirect: "follow",
+        headers: isExternalImage ? { Referer: `${base.origin}/` } : undefined,
         signal: AbortSignal.timeout(15_000),
       });
       if (!response.ok) errors.push(`${resource}: resource returned ${response.status}`);

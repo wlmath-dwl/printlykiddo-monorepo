@@ -4,6 +4,7 @@ const PUBLIC_IMAGE_PREFIX = "imgs/";
 const OWNED_HOSTS = new Set([
   "printlykiddo.com",
   "www.printlykiddo.com",
+  "printlykiddo-static-staging.dongwanlong3.workers.dev",
   "localhost",
   "127.0.0.1",
   "::1",
