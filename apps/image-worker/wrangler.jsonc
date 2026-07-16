@@ -1,0 +1,16 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "printlykiddo-image-proxy-migration",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-07-16",
+  "compatibility_flags": ["nodejs_compat"],
+  "r2_buckets": [
+    {
+      "binding": "IMG_R2",
+      "bucket_name": "kid-print"
+    }
+  ],
+  "observability": {
+    "enabled": false
+  }
+}

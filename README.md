@@ -2,11 +2,15 @@
 
 This directory is an isolated migration copy of the current public site and local admin.
 The original repositories under `/Users/dongwanlong/mywork` are not modified.
+Use Node 24 for local Cloudflare tooling (`.nvmrc`); the installed Node 25 runtime currently fails
+when Wrangler starts Workerd on this machine.
 
 ## Safety boundary
 
 - `pages:scan`, `pages:build` and `pages:publish-local` only read local files and write `.local/`.
 - The new Worker configuration contains no production R2 bucket id, D1 database id, route or custom domain.
+- The image Worker keeps the existing `kid-print` binding name, but local development uses Wrangler's
+  local R2 simulation and its deploy script is disabled.
 - There is intentionally no root `deploy` or remote sync command.
 - Legacy Cloudflare files remain inside `apps/site-legacy` and `apps/admin` only as migration references. Do not run their deploy/sync commands from this workspace.
 
@@ -16,6 +20,7 @@ The original repositories under `/Users/dongwanlong/mywork` are not modified.
 apps/admin          Existing local content admin and all local data/resources
 apps/site-legacy    Existing Next.js public site, used as the first local HTML renderer
 apps/site-worker    New lightweight static page router (local preview only)
+apps/image-worker   Independent R2 image proxy (local preview only)
 packages/shared     URL, hashing and filesystem conventions
 packages/page-data  Dependency collection primitives
 packages/page-templates  Page-family and code-impact registry

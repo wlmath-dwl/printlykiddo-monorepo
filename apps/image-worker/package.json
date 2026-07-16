@@ -1,0 +1,18 @@
+{
+  "name": "@printlykiddo/image-worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --local --port 8790 --persist-to .wrangler/state",
+    "typecheck": "tsc --noEmit",
+    "cf-typegen": "wrangler types --include-runtime=false --env-interface CloudflareEnv worker-configuration.d.ts",
+    "dry-run": "wrangler deploy --dry-run",
+    "deploy": "node -e \"console.error('Disabled in local migration workspace'); process.exit(1)\""
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "5.20260716.1",
+    "typescript": "5.9.3",
+    "wrangler": "4.111.0"
+  }
+}

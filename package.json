@@ -11,6 +11,7 @@
     "dev:admin": "npm run dev --workspace printly-admin",
     "dev:site": "PRINTLY_STATIC_RENDER=1 npm run dev --workspace printlykiddo",
     "dev:worker": "npm run dev --workspace @printlykiddo/site-worker",
+    "dev:image-worker": "npm run dev --workspace @printlykiddo/image-worker",
     "pages:scan": "node packages/publisher/src/cli.mjs scan",
     "pages:status": "node packages/publisher/src/cli.mjs status",
     "pages:build": "node packages/publisher/src/cli.mjs build",
@@ -18,7 +19,8 @@
     "pages:rebuild": "node packages/publisher/src/cli.mjs rebuild",
     "check:publisher": "node --check packages/publisher/src/cli.mjs",
     "check:worker": "npm run typecheck --workspace @printlykiddo/site-worker",
-    "check": "npm run check:publisher && npm run check:worker"
+    "check:image-worker": "npm run typecheck --workspace @printlykiddo/image-worker",
+    "check": "npm run check:publisher && npm run check:worker && npm run check:image-worker"
   },
   "engines": {
     "node": ">=22.5"

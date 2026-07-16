@@ -19,3 +19,4 @@ apps/site-legacy/.dev.vars
 
 .DS_Store
 *.log
+*.cpuprofile
