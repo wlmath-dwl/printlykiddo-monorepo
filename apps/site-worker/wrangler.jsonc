@@ -1,14 +1,56 @@
 {
-  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "$schema": "../../apps/image-worker/node_modules/wrangler/config-schema.json",
   "name": "printlykiddo-static-local",
   "main": "src/index.ts",
-  "compatibility_date": "2026-03-17",
-  "assets": {
-    "directory": "../../.local/r2",
-    "binding": "LOCAL_PAGES",
-    "run_worker_first": true
+  "compatibility_date": "2026-07-16",
+  "compatibility_flags": ["nodejs_compat"],
+  "r2_buckets": [
+    {
+      "binding": "PAGES_BUCKET",
+      "bucket_name": "printlykiddo-pages-local"
+    }
+  ],
+  "vars": {
+    "ENVIRONMENT": "local",
+    "ROBOTS_MODE": "index"
   },
   "observability": {
     "enabled": false
+  },
+  "env": {
+    "staging": {
+      "name": "printlykiddo-static-staging",
+      "r2_buckets": [
+        {
+          "binding": "PAGES_BUCKET",
+          "bucket_name": "printlykiddo-pages-staging"
+        }
+      ],
+      "vars": {
+        "ENVIRONMENT": "staging",
+        "ROBOTS_MODE": "noindex"
+      },
+      "observability": {
+        "enabled": true,
+        "head_sampling_rate": 1
+      }
+    },
+    "production": {
+      "name": "printlykiddo-static-production",
+      "r2_buckets": [
+        {
+          "binding": "PAGES_BUCKET",
+          "bucket_name": "printlykiddo-pages-production"
+        }
+      ],
+      "vars": {
+        "ENVIRONMENT": "production",
+        "ROBOTS_MODE": "index"
+      },
+      "observability": {
+        "enabled": true,
+        "head_sampling_rate": 1
+      }
+    }
   }
 }

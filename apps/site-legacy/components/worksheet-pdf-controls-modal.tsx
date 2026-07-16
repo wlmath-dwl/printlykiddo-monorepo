@@ -44,7 +44,7 @@ type WorksheetPdfControlsModalProps = {
   activities: WorksheetPdfActivity[];
   topicOptions?: WorksheetPdfTopic[];
   initialTopicId?: number | null;
-  /** 资源页：弹框打开后向 /api/pdf-topics 请求当前路径下的兄弟 topic + 图片 */
+  /** 资源页：弹框打开后读取构建期生成的兄弟 topic + 图片清单。 */
   currentCategoryPath?: string;
   downloadHistoryContext?: {
     level1: DownloadHistoryCategory | null;
@@ -440,10 +440,15 @@ export default function WorksheetPdfControlsModal({
     }
     let cancelled = false;
     setIsLoadingTopics(true);
-    fetch(
-      `/api/pdf-topics?path=${encodeURIComponent(currentCategoryPath)}`,
-      { cache: process.env.NODE_ENV === "development" ? "no-store" : "force-cache" },
-    )
+    const normalizedPath = currentCategoryPath
+      .split("/")
+      .filter(Boolean)
+      .map(encodeURIComponent)
+      .join("/");
+    const topicsUrl = process.env.NODE_ENV === "development"
+      ? `/api/pdf-topics?path=${encodeURIComponent(currentCategoryPath)}`
+      : `/data/pdf-topics/${normalizedPath}.json`;
+    fetch(topicsUrl, { cache: process.env.NODE_ENV === "development" ? "no-store" : "force-cache" })
       .then((res) => (res.ok ? res.json() : { topics: [] }))
       .then((data: { topics?: WorksheetPdfTopic[] }) => {
         if (!cancelled) {

@@ -4,6 +4,7 @@ import { DatabaseSync } from "node:sqlite";
 import { cp, mkdir, readFile, readdir, rm, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
+import { pathToFileURL } from "node:url";
 
 import { DependencyCollector, withCommonPageDependencies } from "../../page-data/src/index.mjs";
 import { classifySiteSource } from "../../page-templates/src/index.mjs";
@@ -15,8 +16,19 @@ const ADMIN_DB = path.join(ROOT, "apps/admin/data/local-admin.sqlite");
 const SITE_ROOT = path.join(ROOT, "apps/site-legacy");
 const LOCAL_ROOT = path.join(ROOT, ".local");
 const REGISTRY_PATH = path.join(LOCAL_ROOT, "publisher.sqlite");
-const BUILD_ROOT = path.join(LOCAL_ROOT, "build");
-const LOCAL_R2_ROOT = path.join(LOCAL_ROOT, "r2");
+
+function localOutputPath(environmentName, fallback) {
+  const raw = process.env[environmentName]?.trim();
+  const resolved = path.resolve(raw || fallback);
+  const safeRoot = `${path.resolve(LOCAL_ROOT)}${path.sep}`;
+  if (resolved !== path.resolve(LOCAL_ROOT) && !resolved.startsWith(safeRoot)) {
+    throw new Error(`${environmentName} must stay inside ${LOCAL_ROOT}`);
+  }
+  return resolved;
+}
+
+const BUILD_ROOT = localOutputPath("PRINTLY_BUILD_ROOT", path.join(LOCAL_ROOT, "build"));
+const LOCAL_R2_ROOT = localOutputPath("PRINTLY_LOCAL_R2_ROOT", path.join(LOCAL_ROOT, "r2"));
 
 function now() {
   return new Date().toISOString();
@@ -432,12 +444,44 @@ function markByDependencies(registry, changedDependencies) {
   const update = registry.prepare(`
     UPDATE site_urls SET status='dirty', dirty_reason=?, updated_at=?
     WHERE id IN (SELECT url_id FROM site_url_dependencies WHERE dependency_key = ?)
-      AND status != 'deleted'
+      AND status NOT IN ('deleted','removed')
   `);
   for (const key of changedDependencies) {
     affected += update.run(`dependency changed: ${key}`, now(), key).changes;
   }
   return affected;
+}
+
+function removeLegacyInferredUrls(registry) {
+  return registry.prepare(`
+    DELETE FROM site_urls
+    WHERE page_type='resource' AND status IN ('deleted','removed')
+  `).run().changes;
+}
+
+async function syncRedirects(registry) {
+  const priorNodeEnv = process.env.NODE_ENV;
+  process.env.NODE_ENV = "production";
+  try {
+    const imported = await import(`${pathToFileURL(path.join(SITE_ROOT, "next.config.js")).href}?redirects=${Date.now()}`);
+    const config = imported.default ?? imported;
+    const redirects = typeof config.redirects === "function" ? await config.redirects() : [];
+    const timestamp = now();
+    registry.prepare("UPDATE site_redirects SET is_active=0,updated_at=?").run(timestamp);
+    const upsert = registry.prepare(`
+      INSERT INTO site_redirects (source_url,destination_url,status_code,is_active,updated_at)
+      VALUES (?,?,?,?,?)
+      ON CONFLICT(source_url) DO UPDATE SET destination_url=excluded.destination_url,
+        status_code=excluded.status_code,is_active=1,updated_at=excluded.updated_at
+    `);
+    for (const redirect of redirects) {
+      upsert.run(redirect.source, redirect.destination, redirect.permanent ? 308 : 307, 1, timestamp);
+    }
+    return redirects.length;
+  } finally {
+    if (priorNodeEnv === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = priorNodeEnv;
+  }
 }
 
 async function scan() {
@@ -458,13 +502,15 @@ async function scan() {
     const candidates = [...new Map(discoveredCandidates.map((row) => [row.url, row])).values()];
     const scanToken = crypto.randomUUID();
     const upsert = upsertCandidates(registry, candidates, scanToken);
+    const purgedLegacyInferredUrls = removeLegacyInferredUrls(registry);
+    const redirectCount = await syncRedirects(registry);
     const dataChanges = updateDependencyStates(registry, dependencyHashes);
     const codeChanges = await collectCodeChanges(registry);
     for (const key of codeChanges.changedDependencies) dataChanges.add(key);
     let dependencyAffected = markByDependencies(registry, dataChanges);
     if (codeChanges.globalReason) {
       dependencyAffected += registry.prepare(
-        "UPDATE site_urls SET status='dirty', dirty_reason=?, updated_at=? WHERE status != 'deleted'",
+        "UPDATE site_urls SET status='dirty', dirty_reason=?, updated_at=? WHERE status NOT IN ('deleted','removed')",
       ).run(codeChanges.globalReason, now()).changes;
     }
     console.log(JSON.stringify({
@@ -479,6 +525,8 @@ async function scan() {
       dependency_affected_updates: dependencyAffected,
       changed_code_files: codeChanges.changedFiles,
       global_code_fallback: codeChanges.globalReason,
+      redirects: redirectCount,
+      purged_legacy_inferred_urls: purgedLegacyInferredUrls,
     }, null, 2));
   } finally {
     contentDb.close();
@@ -521,7 +569,13 @@ async function build() {
       const html = await response.text();
       if (!/<html[\s>]/i.test(html) || html.length < 200) throw new Error("renderer did not return a complete HTML document");
       const contentHash = sha256(html);
-      if (row.published_hash === contentHash) {
+      let publishedObjectExists = false;
+      try {
+        publishedObjectExists = (await stat(pageKeyToLocalPath(LOCAL_R2_ROOT, row.r2_key))).isFile();
+      } catch {
+        publishedObjectExists = false;
+      }
+      if (row.published_hash === contentHash && publishedObjectExists) {
         registry.prepare("UPDATE site_urls SET status='published', built_hash=?, dirty_reason=NULL, last_error=NULL, built_at=?, updated_at=? WHERE id=?")
           .run(contentHash, now(), now(), row.id);
         success += 1;
@@ -570,7 +624,11 @@ async function publishLocal() {
   await mkdir(LOCAL_R2_ROOT, { recursive: true });
   const rows = all(registry, "SELECT * FROM site_urls WHERE status = 'built' ORDER BY url");
   const deletedRows = all(registry, "SELECT * FROM site_urls WHERE status = 'deleted' ORDER BY url");
-  const batchInvalidatedUrls = [...rows, ...deletedRows].map((row) => row.url);
+  const isInitialProductionRelease = process.env.PRINTLY_INITIAL_PRODUCTION_RELEASE === "1";
+  const batchInvalidatedUrls = [
+    ...rows,
+    ...(isInitialProductionRelease ? [] : deletedRows),
+  ].map((row) => row.url);
   let success = 0;
   for (const row of rows) {
     const source = pageKeyToLocalPath(BUILD_ROOT, row.r2_key);
@@ -593,15 +651,15 @@ async function publishLocal() {
     WHERE status='dirty'
   `).run(now());
   const manifest = all(registry, "SELECT url,r2_key,page_type,published_hash,published_at FROM site_urls WHERE status='published' ORDER BY url");
+  const redirects = all(registry, `
+    SELECT source_url AS source,destination_url AS destination,status_code
+    FROM site_redirects WHERE is_active=1 ORDER BY source_url
+  `);
   await mkdir(path.join(LOCAL_R2_ROOT, "data"), { recursive: true });
   await writeFile(path.join(LOCAL_R2_ROOT, "data/url-manifest.json"), `${JSON.stringify({ generated_at: now(), urls: manifest }, null, 2)}\n`);
+  await writeFile(path.join(LOCAL_R2_ROOT, "data/redirects.json"), `${JSON.stringify({ generated_at: now(), redirects }, null, 2)}\n`);
   const invalidationPath = path.join(LOCAL_R2_ROOT, "data/cache-invalidation.json");
-  let priorInvalidationUrls = [];
-  try {
-    const prior = JSON.parse(await readFile(invalidationPath, "utf8"));
-    priorInvalidationUrls = Array.isArray(prior.urls) ? prior.urls : [];
-  } catch { /* first local publish */ }
-  const invalidatedUrls = [...new Set([...priorInvalidationUrls, ...batchInvalidatedUrls])].sort();
+  const invalidatedUrls = [...new Set(batchInvalidatedUrls)].sort();
   await writeFile(invalidationPath, `${JSON.stringify({
     generated_at: now(),
     mode: "local-only",
@@ -617,14 +675,15 @@ async function publishLocal() {
     cache_invalidation_urls: invalidatedUrls.length,
     cache_invalidation_urls_added: batchInvalidatedUrls.length,
     local_r2: LOCAL_R2_ROOT,
+    redirects: redirects.length,
   }, null, 2));
 }
 
 function status() {
   const registry = openRegistry();
-  const byStatus = all(registry, "SELECT status, COUNT(*) AS count FROM site_urls WHERE status != 'removed' GROUP BY status ORDER BY status");
-  const byType = all(registry, "SELECT page_type, COUNT(*) AS count FROM site_urls WHERE status != 'removed' GROUP BY page_type ORDER BY page_type");
-  const removedHistory = get(registry, "SELECT COUNT(*) AS count FROM site_urls WHERE status = 'removed'").count;
+  const byStatus = all(registry, "SELECT status, COUNT(*) AS count FROM site_urls WHERE status NOT IN ('deleted','removed') GROUP BY status ORDER BY status");
+  const byType = all(registry, "SELECT page_type, COUNT(*) AS count FROM site_urls WHERE status NOT IN ('deleted','removed') GROUP BY page_type ORDER BY page_type");
+  const removedHistory = get(registry, "SELECT COUNT(*) AS count FROM site_urls WHERE status IN ('deleted','removed')").count;
   const artifacts = all(registry, "SELECT * FROM site_artifacts ORDER BY artifact_key");
   const failures = all(registry, "SELECT url,last_error FROM site_urls WHERE status='failed' ORDER BY url LIMIT 20");
   registry.close();
@@ -636,20 +695,20 @@ function rebuild() {
   const scope = option("scope", "all");
   let result;
   if (scope === "all") {
-    result = registry.prepare("UPDATE site_urls SET status='dirty',dirty_reason='manual full rebuild',updated_at=? WHERE status!='deleted'").run(now());
+    result = registry.prepare("UPDATE site_urls SET status='dirty',dirty_reason='manual full rebuild',updated_at=? WHERE status NOT IN ('deleted','removed')").run(now());
   } else if (scope.startsWith("type:")) {
     const type = scope.slice(5);
-    result = registry.prepare("UPDATE site_urls SET status='dirty',dirty_reason=?,updated_at=? WHERE page_type=? AND status!='deleted'")
+    result = registry.prepare("UPDATE site_urls SET status='dirty',dirty_reason=?,updated_at=? WHERE page_type=? AND status NOT IN ('deleted','removed')")
       .run(`manual page-family rebuild: ${type}`, now(), type);
   } else if (scope.startsWith("dependency:")) {
     const dependency = scope.slice("dependency:".length);
     result = registry.prepare(`
       UPDATE site_urls SET status='dirty',dirty_reason=?,updated_at=?
-      WHERE id IN (SELECT url_id FROM site_url_dependencies WHERE dependency_key=?) AND status!='deleted'
+      WHERE id IN (SELECT url_id FROM site_url_dependencies WHERE dependency_key=?) AND status NOT IN ('deleted','removed')
     `).run(`manual dependency rebuild: ${dependency}`, now(), dependency);
   } else {
     const url = normalizePublicPath(scope.startsWith("url:") ? scope.slice(4) : scope);
-    result = registry.prepare("UPDATE site_urls SET status='dirty',dirty_reason='manual URL rebuild',updated_at=? WHERE url=? AND status!='deleted'").run(now(), url);
+    result = registry.prepare("UPDATE site_urls SET status='dirty',dirty_reason='manual URL rebuild',updated_at=? WHERE url=? AND status NOT IN ('deleted','removed')").run(now(), url);
   }
   registry.close();
   console.log(JSON.stringify({ ok: true, mode: "local-only", scope, marked_dirty: result.changes }, null, 2));
