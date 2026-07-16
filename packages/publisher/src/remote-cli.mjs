@@ -81,10 +81,34 @@ async function mapConcurrent(values, concurrency, task) {
   await Promise.all(workers);
 }
 
+async function retry(task, { attempts = 4, label = "remote operation" } = {}) {
+  let lastError;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      return await task();
+    } catch (error) {
+      lastError = error;
+      if (attempt === attempts) break;
+      const delay = 500 * (2 ** (attempt - 1));
+      console.warn(`${label} failed (attempt ${attempt}/${attempts}); retrying in ${delay}ms`);
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+  }
+  throw lastError;
+}
+
 function environmentConfig(name) {
   const config = ENVIRONMENTS[name];
   if (!config) throw new Error(`--environment must be one of ${Object.keys(ENVIRONMENTS).join(", ")}`);
   return config;
+}
+
+function remoteObjectKey(key) {
+  return key.split("/").map((segment) => {
+    const match = segment.match(/^\[(\.\.\.)?([^\]]+)\]$/);
+    if (!match) return segment;
+    return `__next-${match[1] ? "catchall" : "param"}-${match[2]}__`;
+  }).join("/");
 }
 
 function statePath(environment) {
@@ -165,8 +189,9 @@ async function assertRemoteManifestMatches(environment, config, expectedPriorRel
 }
 
 function putArgs(config, object, file, localPersistRoot) {
+  const storageKey = config.remote ? remoteObjectKey(object.key) : object.key;
   const args = [
-    "r2", "object", "put", `${config.bucket}/${object.key}`,
+    "r2", "object", "put", `${config.bucket}/${storageKey}`,
     "--file", file,
     "--content-type", object.content_type || contentTypeForKey(object.key),
     "--cache-control", object.cache_control || cacheControlForKey(object.key),
@@ -187,12 +212,21 @@ async function uploadPlan(plan, inventory, config, options) {
   }
   const localPersistRoot = path.join(ROOT, ".local/wrangler");
   const manifest = plan.to_upload.filter((entry) => entry.key === "data/release-manifest.json");
-  const otherObjects = plan.to_upload.filter((entry) => entry.key !== "data/release-manifest.json");
+  const resumeFrom = String(options.get("resume-from") || "");
+  const otherObjects = plan.to_upload.filter((entry) =>
+    entry.key !== "data/release-manifest.json"
+      && (!resumeFrom || entry.key.localeCompare(resumeFrom) >= 0));
   await mapConcurrent(otherObjects, concurrency, async (object) => {
-    await run(bin, putArgs(config, object, path.join(inventory.objectsRoot, object.key), localPersistRoot), { capture: !config.remote });
+    await retry(
+      () => run(bin, putArgs(config, object, path.join(inventory.objectsRoot, object.key), localPersistRoot), { capture: !config.remote }),
+      { label: `upload ${object.key}` },
+    );
   });
   for (const object of manifest) {
-    await run(bin, putArgs(config, object, path.join(inventory.objectsRoot, object.key), localPersistRoot), { capture: !config.remote });
+    await retry(
+      () => run(bin, putArgs(config, object, path.join(inventory.objectsRoot, object.key), localPersistRoot), { capture: !config.remote }),
+      { label: `upload ${object.key}` },
+    );
   }
 }
 
@@ -205,11 +239,12 @@ async function verifyUploaded(plan, inventory, config, options) {
   await mapConcurrent(objects, concurrency, async (object) => {
     const destination = path.join(temporaryRoot, object.key);
     await mkdir(path.dirname(destination), { recursive: true });
-    const args = ["r2", "object", "get", `${config.bucket}/${object.key}`, "--file", destination];
+    const storageKey = config.remote ? remoteObjectKey(object.key) : object.key;
+    const args = ["r2", "object", "get", `${config.bucket}/${storageKey}`, "--file", destination];
     if (config.remote) args.push("--remote");
     else args.push("--local", "--persist-to", path.join(ROOT, ".local/wrangler"));
     try {
-      await run(bin, args, { capture: true });
+      await retry(() => run(bin, args, { capture: true }), { label: `verify ${object.key}` });
       const actual = await hashFile(destination);
       if (actual !== object.sha256) errors.push(`${object.key}: expected ${object.sha256}, got ${actual}`);
     } catch (error) {

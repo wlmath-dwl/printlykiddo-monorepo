@@ -30,6 +30,14 @@ function objectKey(pathname: string) {
   }
 }
 
+function remoteSafeObjectKey(key: string) {
+  return key.split("/").map((segment) => {
+    const match = segment.match(/^\[(\.\.\.)?([^\]]+)\]$/);
+    if (!match) return segment;
+    return `__next-${match[1] ? "catchall" : "param"}-${match[2]}__`;
+  }).join("/");
+}
+
 function isAssetPath(pathname: string) {
   return pathname.startsWith("/_next/")
     || pathname.startsWith("/assets/")
@@ -136,7 +144,9 @@ export default {
     }
 
     if (isAssetPath(pathname)) {
-      const asset = await readObject(request, env, objectKey(pathname));
+      const key = objectKey(pathname);
+      const asset = await readObject(request, env, key)
+        ?? (remoteSafeObjectKey(key) === key ? null : await readObject(request, env, remoteSafeObjectKey(key)));
       if (!asset) return new Response("Not Found", { status: 404, headers: { "Cache-Control": "no-store" } });
       const headers = new Headers(asset.headers);
       if (!headers.has("Cache-Control")) headers.set("Cache-Control", cacheControlForAsset(pathname));
