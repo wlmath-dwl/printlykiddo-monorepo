@@ -20,6 +20,13 @@ const FORBIDDEN_PRODUCTION_PATTERNS = [
 ];
 
 const EXTENSIONLESS_STATIC_PATHS = new Set(["/apple-icon", "/opengraph-image", "/twitter-image"]);
+const CLOUDFLARE_ANALYTICS_BEACON = /<script\s+defer\s+src=["']https:\/\/static\.cloudflareinsights\.com\/beacon\.min\.js\/[^"']+["'][\s\S]*?<\/script>\n?/gi;
+
+function releaseBodyHash(body) {
+  // Cloudflare Web Analytics is injected after the Worker response and is not
+  // part of the immutable R2 object. Ignore only that platform-owned script.
+  return sha256(body.toString("utf8").replace(CLOUDFLARE_ANALYTICS_BEACON, ""));
+}
 
 function extractAttributeValues(html, attribute) {
   const expression = new RegExp(`${attribute}=["']([^"']+)["']`, "gi");
@@ -171,7 +178,7 @@ export async function validateOrigin(releaseId, origin, { expectNoindex = false,
         errors.push(`${page.url}: staging response is missing X-Robots-Tag noindex`);
       }
       const body = Buffer.from(await response.arrayBuffer());
-      if (sha256(body) !== page.sha256) errors.push(`${page.url}: served body hash differs from release`);
+      if (releaseBodyHash(body) !== page.sha256) errors.push(`${page.url}: served body hash differs from release`);
       const html = body.toString("utf8");
       for (const [label, pattern] of FORBIDDEN_PRODUCTION_PATTERNS) {
         if (pattern.test(html)) errors.push(`${page.url}: served HTML contains ${label}`);
@@ -227,6 +234,10 @@ export async function validateOrigin(releaseId, origin, { expectNoindex = false,
   });
   if (!releaseResponse.ok) errors.push(`release endpoint returned ${releaseResponse.status}`);
   else {
+    const cacheVersion = releaseResponse.headers.get("x-printly-cache-version");
+    if (cacheVersion !== id) {
+      errors.push(`release endpoint cache version is ${cacheVersion || "missing"}, expected ${id}`);
+    }
     const remoteManifest = await releaseResponse.json();
     if (remoteManifest.release_id !== id) errors.push(`release endpoint reports ${remoteManifest.release_id}, expected ${id}`);
   }

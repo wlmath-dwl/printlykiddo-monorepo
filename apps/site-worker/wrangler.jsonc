@@ -12,7 +12,8 @@
   ],
   "vars": {
     "ENVIRONMENT": "local",
-    "ROBOTS_MODE": "index"
+    "ROBOTS_MODE": "index",
+    "CACHE_VERSION": "local"
   },
   "observability": {
     "enabled": false
@@ -28,7 +29,8 @@
       ],
       "vars": {
         "ENVIRONMENT": "staging",
-        "ROBOTS_MODE": "noindex"
+        "ROBOTS_MODE": "noindex",
+        "CACHE_VERSION": "migration-local-004"
       },
       "observability": {
         "enabled": true,
@@ -37,6 +39,18 @@
     },
     "production": {
       "name": "printlykiddo-static-production",
+      "workers_dev": true,
+      "preview_urls": true,
+      "routes": [
+        {
+          "pattern": "printlykiddo.com/*",
+          "zone_name": "printlykiddo.com"
+        },
+        {
+          "pattern": "www.printlykiddo.com/*",
+          "zone_name": "printlykiddo.com"
+        }
+      ],
       "r2_buckets": [
         {
           "binding": "PAGES_BUCKET",
@@ -45,7 +59,8 @@
       ],
       "vars": {
         "ENVIRONMENT": "production",
-        "ROBOTS_MODE": "index"
+        "ROBOTS_MODE": "index",
+        "CACHE_VERSION": "migration-local-004"
       },
       "observability": {
         "enabled": true,

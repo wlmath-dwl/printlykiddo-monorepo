@@ -59,6 +59,7 @@ function applyCommonHeaders(headers: Headers, env: RuntimeEnv) {
   headers.set("Permissions-Policy", "interest-cohort=(), camera=(), microphone=(), geolocation=()");
   headers.set("X-Frame-Options", "SAMEORIGIN");
   headers.set("X-Printly-Environment", env.ENVIRONMENT);
+  headers.set("X-Printly-Cache-Version", env.CACHE_VERSION);
   if (env.ROBOTS_MODE === "noindex") headers.set("X-Robots-Tag", "noindex, nofollow");
 }
 
@@ -154,9 +155,10 @@ export default {
       return new Response(request.method === "HEAD" ? null : asset.body, { status: asset.status, headers });
     }
 
-    // Cache API key is the exact public URL. This allows Cloudflare's single-URL
-    // purge to invalidate the same key without knowing a private query suffix.
+    // Cache API is shared across Workers in the same zone. Namespace page entries
+    // by release so a cutover can never reuse HTML written by the legacy Worker.
     const cacheKeyUrl = new URL(url.origin + pathname);
+    cacheKeyUrl.searchParams.set("__printly_release", env.CACHE_VERSION);
     const cacheKey = new Request(cacheKeyUrl, { method: "GET" });
     const cached = await caches.default.match(cacheKey);
     if (cached) return responseFromCached(request, cached, env);

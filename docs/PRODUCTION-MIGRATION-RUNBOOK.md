@@ -105,13 +105,17 @@ PRINTLY_REMOTE_WRITE_ACK=ALLOW_PRINTLY_PRODUCTION_WRITE \
 ```
 
 Deploy the new production Worker under a temporary hostname and repeat origin validation before
-changing the public route. Route changes are manual and intentionally outside repository scripts.
+changing the public route. Set `CACHE_VERSION` in the Worker environment to the exact release ID;
+origin validation rejects a missing or stale cache version. This prevents the new Worker from
+reusing Cache API entries written by the legacy Worker in the same zone.
 
 ## 7. Cut over and purge
 
 Immediately before cutover, record the legacy Worker version and route, and pause content edits.
 Change only the `printlykiddo.com` Worker association. Do not delete the legacy Worker or any old
-binding. After the new route is active, purge the exact HTML URLs from the release manifest:
+binding. The production routes are declared in `apps/site-worker/wrangler.jsonc`; an existing route
+owned by another Worker must be reassigned by its Cloudflare route ID before normal Wrangler deploys
+can manage it. After the new route is active, purge the exact HTML URLs from the release manifest:
 
 ```bash
 PRINTLY_REMOTE_WRITE_ACK=ALLOW_PRINTLY_PRODUCTION_WRITE \
